@@ -1,0 +1,233 @@
+import streamlit as st
+import urllib.parse
+import csv
+import os
+from datetime import datetime
+
+# 1. CONFIGURAÇÃO BÁSICA DA PÁGINA
+st.set_page_config(
+    page_title="ESCUTA+ | Acolhimento Escolar",
+    page_icon="💙",
+    layout="centered" 
+)
+
+# 2. CONFIGURAÇÃO DE BANCO DE DADOS (CSV local)
+ARQUIVO_DENUNCIAS = "denuncias.csv"
+
+def salvar_denuncia(usuario, anonimato, tipo, local, descricao):
+    """Salva a denúncia em CSV para análise posterior."""
+    try:
+        dados = {
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'usuario': usuario,
+            'anonimato': anonimato,
+            'tipo': tipo,
+            'local': local,
+            'descricao': descricao
+        }
+        
+        arquivo_existe = os.path.exists(ARQUIVO_DENUNCIAS)
+        
+        with open(ARQUIVO_DENUNCIAS, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=dados.keys())
+            if not arquivo_existe:
+                writer.writeheader()
+            writer.writerow(dados)
+        return True
+    except Exception as e:
+        st.error(f"Erro ao salvar: {e}")
+        return False
+
+# 3. INJEÇÃO DE CSS DE ALTA ACESSIBILIDADE E DESIGN
+css_background = ".stApp {background-color: #F0F4F8;}"
+
+st.markdown(f"""
+    <style>
+    /* --- FUNDO E CAIXA DE CONTEÚDO --- */
+    {css_background}
+    
+    /* Uma única caixa branca que envolve toda a tela */
+    .block-container {{
+        background-color: rgba(255, 255, 255, 0.92) !important; 
+        padding: 2rem 3rem !important; 
+        border-radius: 24px !important; 
+        box-shadow: 0px 10px 40px rgba(0,0,0,0.2) !important; 
+        margin-top: 2rem !important;
+        margin-bottom: 2rem !important;
+    }}
+    
+    /* --- ACESSIBILIDADE DE TEXTO --- */
+    h1, h2, h3, p, label, .stRadio > div {{
+        color: #121212 !important; 
+        font-family: 'Arial', sans-serif !important; 
+    }}
+    p, li, label, div[data-baseweb="radio"] {{
+        font-size: 22px !important; 
+        line-height: 1.6 !important; 
+    }}
+    h1 {{
+        font-size: 40px !important;
+        color: #0056B3 !important; 
+        font-weight: 900 !important;
+    }}
+    
+    /* --- ACESSIBILIDADE MOTORA --- */
+    .stButton > button, .stLinkButton > a {{
+        height: auto !important;
+        padding: 24px !important;
+        font-size: 26px !important;
+        font-weight: 900 !important;
+        border-radius: 16px !important;
+        width: 100% !important;
+        text-align: center !important;
+        display: block !important;
+        text-decoration: none !important;
+        transition: 0.2s;
+    }}
+    
+    .stButton > button:focus, .stLinkButton > a:focus, input:focus, textarea:focus {{
+        outline: 6px solid #FFC107 !important; 
+        outline-offset: 4px !important;
+    }}
+    
+    button[kind="primary"], .stLinkButton > a {{
+        background-color: #D32F2F !important; 
+        color: #FFFFFF !important;
+        border: 4px solid transparent !important;
+    }}
+    
+    button[kind="primary"]:hover, .stLinkButton > a:hover {{
+        background-color: #9A0007 !important;
+        border: 4px solid #121212 !important; 
+    }}
+    
+    button[kind="secondary"] {{
+        background-color: #FFFFFF !important;
+        color: #0056B3 !important;
+        border: 4px solid #0056B3 !important;
+    }}
+    
+    input, textarea, div[data-baseweb="select"] {{
+        font-size: 20px !important;
+        border: 3px solid #555 !important; 
+        border-radius: 8px !important;
+    }}
+    
+    [data-testid="stImage"] {{
+        display: flex;
+        justify-content: center;
+    }}
+    </style>
+""", unsafe_allow_html=True)
+
+# 3. GERENCIAMENTO DE ESTADO
+if 'tela' not in st.session_state:
+    st.session_state.tela = 1
+if 'usuario' not in st.session_state:
+    st.session_state.usuario = "Anônimo"
+
+def mudar_tela(nova_tela):
+    st.session_state.tela = nova_tela
+
+# --- TELA 1: LOGIN ACESSÍVEL ---
+if st.session_state.tela == 1:
+    st.title("💙 Bem-vindo ao ESCUTA+")
+    st.write("Identifique-se para entrar ou continue anonimamente.")
+    
+    st.write("### Suas Informações")
+    nome = st.text_input("1. Qual seu Nome?")
+    matricula = st.text_input("2. Qual sua Matrícula?")
+    
+    st.write("")
+    if st.button("➡️ Entrar no Aplicativo", type="secondary"):
+        if nome and matricula:
+            st.session_state.usuario = f"{nome} (Matrícula: {matricula})"
+        elif nome:
+            st.session_state.usuario = nome
+        elif matricula:
+            st.session_state.usuario = f"Aluno da Matrícula {matricula}"
+        else:
+            st.session_state.usuario = "Anônimo"
+            
+        mudar_tela(2)
+        st.rerun()
+
+# --- TELA 2: BOTÃO DO PÂNICO (Home) ---
+elif st.session_state.tela == 2:
+    st.title("ESCUTA+")
+    st.write(f"Olá, **{st.session_state.usuario}**. Você está em um ambiente seguro.")
+    st.write("---")
+    
+    st.write("### O que você precisa agora?")
+    
+    if st.button("🚨 PEDIR AJUDA AGORA", type="primary"):
+        mudar_tela(4)
+        st.rerun()
+        
+    st.write("")
+    st.write("")
+    
+    if st.button("ℹ️ Entenda o que está passando (Acolhimento)", type="secondary"):
+        mudar_tela(3)
+        st.rerun()
+
+# --- TELA 3: ACOLHIMENTO ---
+elif st.session_state.tela == 3:
+    st.title("🤝 Acolhimento")
+    st.write("Leia com calma. Entender o problema é o primeiro passo para a solução.")
+    
+    st.markdown("### O que são essas situações?")
+    st.error("**Bullying:** Atos violentos, intencionais e repetidos contra alguém indefeso.")
+    st.warning("**Racismo:** Discriminação baseada na cor da pele ou etnia.")
+    st.info("**Sofrimento Emocional:** Tristeza intensa, medo ou isolamento. É normal pedir ajuda!")
+        
+    st.write("---")
+    if st.button("⬅️ Voltar para o Início", type="secondary"):
+        mudar_tela(2)
+        st.rerun()
+
+# --- TELA 4: FORMULÁRIO DE DENÚNCIA ---
+elif st.session_state.tela == 4:
+    st.title("📝 Pedido de Ajuda")
+    st.write("Preencha apenas o que conseguir. Nós vamos te ajudar.")
+    
+    anonimato = st.radio("1. Como deseja falar com a gente?", ["Quero ser Anônimo", "Pode usar meu login"])
+    tipo = st.selectbox("2. O que aconteceu com você?", ["Toque aqui para escolher...", "Bullying", "Racismo", "Assédio", "Sofrimento Emocional", "Outros"])
+    local = st.text_input("3. Onde isso aconteceu? (Ex: Sala de Aula, Corredor, Refeitório...)")
+    descricao = st.text_area("4. Quer contar mais detalhes? ")
+    
+    st.write("---")
+    
+    if tipo != "Toque aqui para escolher...":
+        numero_destino = "558694231846" 
+        
+        nome_aluno_envio = "Anônimo" if anonimato == "Quero ser Anônimo" else st.session_state.usuario
+        relato_envio = descricao if descricao else "O aluno preferiu não detalhar agora."
+            
+        mensagem = f"""🚨 *ALERTA DE EMERGÊNCIA - ESCUTA+* 🚨\n\nOlá, Coordenação. Um novo pedido de ajuda foi registrado pelo aplicativo.\n\n*Aluno:* {nome_aluno_envio}\n*Situação:* {tipo}\n*Local:* {local}\n*Relato:* {relato_envio}\n\n⚠️ _Por favor, verifique a situação e inicie o protocolo de acolhimento._"""
+        
+        msg_codificada = urllib.parse.quote(mensagem)
+        link_whatsapp = f"https://wa.me/{numero_destino}?text={msg_codificada}"
+        
+        if st.button("📲 Confirmar e Enviar Pedido de Ajuda", type="primary"):
+            # Salva os dados antes de abrir WhatsApp
+            salvar_denuncia(
+                usuario=st.session_state.usuario,
+                anonimato=anonimato,
+                tipo=tipo,
+                local=local,
+                descricao=descricao
+            )
+            st.success("✅ Seu pedido foi registrado com segurança!")
+            st.info("📱 Clique no link abaixo para enviar pelo WhatsApp:")
+            st.markdown(f"[📲 Enviar para Coordenação]({link_whatsapp})")
+            st.balloons()
+        
+    else:
+        st.button("📲 Confirmar e Enviar Pedido de Ajuda", disabled=True)
+        st.warning("⚠️ Escolha uma opção na pergunta número 2 para liberar o botão de envio.")
+        
+    st.write("")
+    if st.button("⬅️ Cancelar e Voltar", type="secondary"):
+        mudar_tela(2)
+        st.rerun()
