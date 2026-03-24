@@ -10,8 +10,14 @@ from datetime import datetime
 st.set_page_config(
     page_title="ESCUTA+ | Acolhimento Escolar",
     page_icon="💙",
-    layout="centered" 
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
+
+# Adicionar viewport meta tag para mobile
+st.markdown("""
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+""", unsafe_allow_html=True)
 
 # 2. CONFIGURAÇÃO DE BANCO DE DADOS (CSV + JSON local)
 ARQUIVO_DENUNCIAS = "denuncias.csv"
@@ -178,6 +184,8 @@ st.markdown(f"""
         display: block !important;
         text-decoration: none !important;
         transition: 0.2s;
+        min-height: 60px !important;
+        touch-action: manipulation !important;
     }}
     
     .stButton > button:focus, .stLinkButton > a:focus, input:focus, textarea:focus {{
@@ -206,11 +214,76 @@ st.markdown(f"""
         font-size: 20px !important;
         border: 3px solid #555 !important; 
         border-radius: 8px !important;
+        padding: 12px !important;
     }}
     
     [data-testid="stImage"] {{
         display: flex;
         justify-content: center;
+    }}
+    
+    /* --- RESPONSIVE MOBILE --- */
+    @media (max-width: 768px) {{
+        .block-container {{
+            padding: 1.5rem 1.5rem !important;
+            margin-top: 1rem !important;
+            margin-bottom: 1rem !important;
+            border-radius: 16px !important;
+        }}
+        
+        h1 {{
+            font-size: 32px !important;
+        }}
+        
+        h2, h3 {{
+            font-size: 24px !important;
+        }}
+        
+        p, li, label, div[data-baseweb="radio"] {{
+            font-size: 18px !important;
+        }}
+        
+        .stButton > button, .stLinkButton > a {{
+            padding: 20px !important;
+            font-size: 20px !important;
+            min-height: 56px !important;
+        }}
+        
+        input, textarea {{
+            font-size: 18px !important;
+            padding: 10px !important;
+        }}
+    }}
+    
+    @media (max-width: 480px) {{
+        .block-container {{
+            padding: 1rem 1rem !important;
+            margin-top: 0.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }}
+        
+        h1 {{
+            font-size: 28px !important;
+        }}
+        
+        h2, h3 {{
+            font-size: 20px !important;
+        }}
+        
+        p, li, label, div[data-baseweb="radio"] {{
+            font-size: 16px !important;
+        }}
+        
+        .stButton > button, .stLinkButton > a {{
+            padding: 18px !important;
+            font-size: 18px !important;
+            min-height: 52px !important;
+        }}
+        
+        input, textarea {{
+            font-size: 16px !important;
+            padding: 8px !important;
+        }}
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -245,7 +318,7 @@ if st.session_state.tela == 1:
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("➡️ Entrar no Aplicativo", type="secondary"):
+        if st.button("➡️ Entrar no Aplicativo", type="secondary", use_container_width=True):
             if nome and matricula:
                 st.session_state.usuario = f"{nome} (Matrícula: {matricula})"
             elif nome:
@@ -259,7 +332,7 @@ if st.session_state.tela == 1:
             st.rerun()
     
     with col2:
-        if st.button("🔐 Sou Coordenador", type="secondary"):
+        if st.button("🔐 Sou Coordenador", type="secondary", use_container_width=True):
             mudar_tela(0)
             st.rerun()
 
@@ -270,7 +343,7 @@ elif st.session_state.tela == 0:
     
     senha = st.text_input("Senha:", type="password")
     
-    if st.button("🔓 Entrar", type="primary"):
+    if st.button("🔓 Entrar", type="primary", use_container_width=True):
         if senha == SENHA_COORDENADOR:
             st.session_state.coordenador_logado = True
             mudar_tela(5)  # Tela do Dashboard
@@ -279,7 +352,7 @@ elif st.session_state.tela == 0:
             st.error("❌ Senha incorreta!")
     
     st.write("---")
-    if st.button("⬅️ Voltar", type="secondary"):
+    if st.button("⬅️ Voltar", type="secondary", use_container_width=True):
         mudar_tela(1)
         st.rerun()
 
@@ -298,14 +371,13 @@ elif st.session_state.tela == 2:
     st.write("")
     st.write("### O que você precisa agora?")
     
-    if st.button("🚨 PEDIR AJUDA AGORA", type="primary"):
+    if st.button("🚨 PEDIR AJUDA AGORA", type="primary", use_container_width=True):
         mudar_tela(4)
         st.rerun()
         
     st.write("")
-    st.write("")
     
-    if st.button("ℹ️ Entenda o que está passando (Acolhimento)", type="secondary"):
+    if st.button("ℹ️ Entenda o que está passando (Acolhimento)", type="secondary", use_container_width=True):
         mudar_tela(3)
         st.rerun()
 
@@ -320,7 +392,7 @@ elif st.session_state.tela == 3:
     st.info("**Sofrimento Emocional:** Tristeza intensa, medo ou isolamento. É normal pedir ajuda!")
         
     st.write("---")
-    if st.button("⬅️ Voltar para o Início", type="secondary"):
+    if st.button("⬅️ Voltar para o Início", type="secondary", use_container_width=True):
         mudar_tela(2)
         st.rerun()
 
@@ -365,7 +437,7 @@ elif st.session_state.tela == 4:
         msg_codificada = urllib.parse.quote(mensagem)
         link_whatsapp = f"https://wa.me/{numero_destino}?text={msg_codificada}"
         
-        if st.button("📲 Confirmar e Enviar Pedido de Ajuda", type="primary"):
+        if st.button("📲 Confirmar e Enviar Pedido de Ajuda", type="primary", use_container_width=True):
             # Salva os dados antes de abrir WhatsApp
             salvar_denuncia(
                 usuario=st.session_state.usuario,
@@ -386,11 +458,11 @@ elif st.session_state.tela == 4:
             st.balloons()
         
     else:
-        st.button("📲 Confirmar e Enviar Pedido de Ajuda", disabled=True)
+        st.button("📲 Confirmar e Enviar Pedido de Ajuda", disabled=True, use_container_width=True)
         st.warning("⚠️ Escolha uma opção na pergunta número 2 para liberar o botão de envio.")
         
     st.write("")
-    if st.button("⬅️ Cancelar e Voltar", type="secondary"):
+    if st.button("⬅️ Cancelar e Voltar", type="secondary", use_container_width=True):
         mudar_tela(2)
         st.rerun()
 
@@ -413,7 +485,7 @@ elif st.session_state.tela == 5:
     """, unsafe_allow_html=True)
     
     # Botão de logout
-    if st.button("🚪 Sair", type="secondary"):
+    if st.button("🚪 Sair", type="secondary", use_container_width=True):
         st.session_state.coordenador_logado = False
         mudar_tela(1)
         st.rerun()
@@ -474,7 +546,7 @@ elif st.session_state.tela == 5:
                     st.write(f"_{denuncia.get('descricao', 'Sem detalhes')}_ ")
                 
                 # Botão para marcar como resolvido
-                if st.button(f"✅ Marcar como Acompanhado", key=f"btn_{denuncia.get('id')}"):
+                if st.button(f"✅ Marcar como Acompanhado", key=f"btn_{denuncia.get('id')}", use_container_width=True):
                     st.success(f"Denúncia #{denuncia.get('id')} marcada como acompanhada!")
     else:
         st.info("✨ Nenhuma denúncia registrada ainda.")
@@ -485,15 +557,16 @@ elif st.session_state.tela == 5:
     col_exportar, col_limpar = st.columns(2)
     
     with col_exportar:
-        if st.button("📥 Exportar Relatório (JSON)"):
+        if st.button("📥 Exportar Relatório (JSON)", use_container_width=True):
             json_str = json.dumps(denuncias, ensure_ascii=False, indent=2)
             st.download_button(
                 label="Baixar JSON",
                 data=json_str,
                 file_name="denuncias_escuta_plus.json",
-                mime="application/json"
+                mime="application/json",
+                use_container_width=True
             )
     
     with col_limpar:
-        if st.button("🔄 Atualizar Dados"):
+        if st.button("🔄 Atualizar Dados", use_container_width=True):
             st.rerun()
