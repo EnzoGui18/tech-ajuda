@@ -1,0 +1,47 @@
+[
+  {
+    "timestamp": "2026-03-23 09:15:00",
+    "usuario": "Ana Silva (Matrícula: 2024001)",
+    "anonimato": "Quero ser Anônimo",
+    "tipo": "Bullying",
+    "local": "Sala de Aula",
+    "descricao": "Colegas fazem brincadeiras sobre minha aparência todos os dias",
+    "id": "20260323091500"
+  },
+  {
+    "timestamp": "2026-03-23 10:30:00",
+    "usuario": "Anônimo",
+    "anonimato": "Quero ser Anônimo",
+    "tipo": "Racismo",
+    "local": "Corredor",
+    "descricao": "Chamam-me de nomes ofensivos relacionados à minha cor",
+    "id": "20260323103000"
+  },
+  {
+    "timestamp": "2026-03-23 11:45:00",
+    "usuario": "Pedro Santos (Matrícula: 2024002)",
+    "anonimato": "Pode usar meu login",
+    "tipo": "Assédio",
+    "local": "Refeitório",
+    "descricao": "Colega não respeita quando digo 'não'. Toca sem permissão",
+    "id": "20260323114500"
+  },
+  {
+    "timestamp": "2026-03-23 13:20:00",
+    "usuario": "Anônimo",
+    "anonimato": "Quero ser Anônimo",
+    "tipo": "Sofrimento Emocional",
+    "local": "Sala de Aula",
+    "descricao": "Sinto muito vontade de chorar durante as aulas. Tenho medo de ir à escola",
+    "id": "20260323132000"
+  },
+  {
+    "timestamp": "2026-03-23 14:00:00",
+    "usuario": "Lucas (Matrícula: 2024003)",
+    "anonimato": "Pode usar meu login",
+    "tipo": "Bullying",
+    "local": "Quadra de Esportes",
+    "descricao": "Excluem-me do time nas aulas de educação física. Ficam rindo de mim",
+    "id": "20260323140000"
+  }
+]
