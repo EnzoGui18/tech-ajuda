@@ -2,6 +2,7 @@ import streamlit as st
 import urllib.parse
 import csv
 import os
+import json
 import base64
 from datetime import datetime
 
@@ -12,33 +13,59 @@ st.set_page_config(
     layout="centered" 
 )
 
-# 2. CONFIGURAÇÃO DE BANCO DE DADOS (CSV local)
+# 2. CONFIGURAÇÃO DE BANCO DE DADOS (CSV + JSON local)
 ARQUIVO_DENUNCIAS = "denuncias.csv"
+ARQUIVO_JSON = "denuncias.json"
 ARQUIVO_BACKGROUND = "background.avif"
+SENHA_COORDENADOR = "escuta123"  # Mudar em produção!
 
 def salvar_denuncia(usuario, anonimato, tipo, local, descricao):
-    """Salva a denúncia em CSV para análise posterior."""
+    """Salva a denúncia em CSV e JSON para análise posterior."""
     try:
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         dados = {
-            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'timestamp': timestamp,
             'usuario': usuario,
             'anonimato': anonimato,
             'tipo': tipo,
             'local': local,
-            'descricao': descricao
+            'descricao': descricao,
+            'id': datetime.now().strftime("%Y%m%d%H%M%S")
         }
         
-        arquivo_existe = os.path.exists(ARQUIVO_DENUNCIAS)
+        # SALVAR EM JSON (melhor para tempo real)
+        denuncias_json = []
+        if os.path.exists(ARQUIVO_JSON):
+            with open(ARQUIVO_JSON, 'r', encoding='utf-8') as f:
+                denuncias_json = json.load(f)
         
+        denuncias_json.append(dados)
+        
+        with open(ARQUIVO_JSON, 'w', encoding='utf-8') as f:
+            json.dump(denuncias_json, f, ensure_ascii=False, indent=2)
+        
+        # MANTER TAMBÉM CSV (para compatibilidade)
+        arquivo_existe = os.path.exists(ARQUIVO_DENUNCIAS)
         with open(ARQUIVO_DENUNCIAS, 'a', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=dados.keys())
             if not arquivo_existe:
                 writer.writeheader()
             writer.writerow(dados)
+        
         return True
     except Exception as e:
         st.error(f"Erro ao salvar: {e}")
         return False
+
+def carregar_denuncias():
+    """Carrega todas as denúncias do JSON."""
+    try:
+        if os.path.exists(ARQUIVO_JSON):
+            with open(ARQUIVO_JSON, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except:
+        pass
+    return []
 
 def get_base64_image(image_path):
     """Converte imagem para base64."""
@@ -197,6 +224,10 @@ if 'historico_denuncias' not in st.session_state:
     st.session_state.historico_denuncias = 0
 if 'ultima_denuncia' not in st.session_state:
     st.session_state.ultima_denuncia = None
+if 'coordenador_logado' not in st.session_state:
+    st.session_state.coordenador_logado = False
+if 'ultimas_denuncias_vistas' not in st.session_state:
+    st.session_state.ultimas_denuncias_vistas = []
 
 def mudar_tela(nova_tela):
     st.session_state.tela = nova_tela
@@ -211,17 +242,45 @@ if st.session_state.tela == 1:
     matricula = st.text_input("2. Qual sua Matrícula?")
     
     st.write("")
-    if st.button("➡️ Entrar no Aplicativo", type="secondary"):
-        if nome and matricula:
-            st.session_state.usuario = f"{nome} (Matrícula: {matricula})"
-        elif nome:
-            st.session_state.usuario = nome
-        elif matricula:
-            st.session_state.usuario = f"Aluno da Matrícula {matricula}"
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("➡️ Entrar no Aplicativo", type="secondary"):
+            if nome and matricula:
+                st.session_state.usuario = f"{nome} (Matrícula: {matricula})"
+            elif nome:
+                st.session_state.usuario = nome
+            elif matricula:
+                st.session_state.usuario = f"Aluno da Matrícula {matricula}"
+            else:
+                st.session_state.usuario = "Anônimo"
+                
+            mudar_tela(2)
+            st.rerun()
+    
+    with col2:
+        if st.button("🔐 Sou Coordenador", type="secondary"):
+            mudar_tela(0)
+            st.rerun()
+
+# --- TELA 0: LOGIN COORDENADOR ---
+elif st.session_state.tela == 0:
+    st.title("🔐 Acesso Coordenador")
+    st.write("Digite a senha para acessar o painel de denúncias.")
+    
+    senha = st.text_input("Senha:", type="password")
+    
+    if st.button("🔓 Entrar", type="primary"):
+        if senha == SENHA_COORDENADOR:
+            st.session_state.coordenador_logado = True
+            mudar_tela(5)  # Tela do Dashboard
+            st.rerun()
         else:
-            st.session_state.usuario = "Anônimo"
-            
-        mudar_tela(2)
+            st.error("❌ Senha incorreta!")
+    
+    st.write("---")
+    if st.button("⬅️ Voltar", type="secondary"):
+        mudar_tela(1)
         st.rerun()
 
 # --- TELA 2: BOTÃO DO PÂNICO (Home) ---
@@ -334,3 +393,107 @@ elif st.session_state.tela == 4:
     if st.button("⬅️ Cancelar e Voltar", type="secondary"):
         mudar_tela(2)
         st.rerun()
+
+# --- TELA 5: DASHBOARD COORDENADOR ---
+elif st.session_state.tela == 5:
+    if not st.session_state.coordenador_logado:
+        mudar_tela(1)
+        st.rerun()
+    
+    st.title("📊 PAINEL DO COORDENADOR - ESCUTA+")
+    st.write("🔄 Atualiza automaticamente a cada 5 segundos | Acompanhamento de denúncias em TEMPO REAL")
+    
+    # Auto-refresh
+    st.markdown("""
+    <script>
+    setTimeout(function() {
+        window.location.reload();
+    }, 5000);
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Botão de logout
+    if st.button("🚪 Sair", type="secondary"):
+        st.session_state.coordenador_logado = False
+        mudar_tela(1)
+        st.rerun()
+    
+    st.write("---")
+    
+    # Carregar denúncias
+    denuncias = carregar_denuncias()
+    
+    # ESTATÍSTICAS
+    st.write("### 📈 Estatísticas")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total de Denúncias", len(denuncias))
+    
+    # Contar por tipo
+    tipos_count = {}
+    for d in denuncias:
+        tipo = d.get('tipo', 'Outros')
+        tipos_count[tipo] = tipos_count.get(tipo, 0) + 1
+    
+    with col2:
+        bullying_count = tipos_count.get('Bullying', 0)
+        st.metric("🚨 Bullying", bullying_count)
+    
+    with col3:
+        racismo_count = tipos_count.get('Racismo', 0)
+        st.metric("🎓 Racismo", racismo_count)
+    
+    with col4:
+        sofrimento_count = tipos_count.get('Sofrimento Emocional', 0)
+        st.metric("💙 Sofrimento Emocional", sofrimento_count)
+    
+    st.write("---")
+    
+    # DENÚNCIAS RECENTES
+    st.write("### 🔔 DENÚNCIAS RECENTES")
+    
+    if denuncias:
+        # Mostrar em ordem reversa (mais recentes primeiro)
+        denuncias_recentes = list(reversed(denuncias[-10:]))  # Últimas 10
+        
+        for idx, denuncia in enumerate(denuncias_recentes):
+            with st.expander(f"#{denuncia.get('id', 'N/A')} - {denuncia.get('tipo', 'Outros')} - {denuncia.get('timestamp', 'N/A')}", expanded=idx == 0):
+                col_a, col_b = st.columns([1, 2])
+                
+                with col_a:
+                    st.write(f"**Aluno:** {denuncia.get('usuario', 'Anônimo')}")
+                    st.write(f"**Tipo:** {denuncia.get('tipo', 'Outros')}")
+                    st.write(f"**Local:** {denuncia.get('local', 'Não informado')}")
+                    st.write(f"**Anônimo?** {'✅ Sim' if denuncia.get('anonimato') == 'Quero ser Anônimo' else '❌ Não'}")
+                    st.write(f"⏰ {denuncia.get('timestamp', 'N/A')}")
+                
+                with col_b:
+                    st.write("**Descrição:**")
+                    st.write(f"_{denuncia.get('descricao', 'Sem detalhes')}_ ")
+                
+                # Botão para marcar como resolvido
+                if st.button(f"✅ Marcar como Acompanhado", key=f"btn_{denuncia.get('id')}"):
+                    st.success(f"Denúncia #{denuncia.get('id')} marcada como acompanhada!")
+    else:
+        st.info("✨ Nenhuma denúncia registrada ainda.")
+    
+    st.write("---")
+    st.write("### 📋 Ações Rápidas")
+    
+    col_exportar, col_limpar = st.columns(2)
+    
+    with col_exportar:
+        if st.button("📥 Exportar Relatório (JSON)"):
+            json_str = json.dumps(denuncias, ensure_ascii=False, indent=2)
+            st.download_button(
+                label="Baixar JSON",
+                data=json_str,
+                file_name="denuncias_escuta_plus.json",
+                mime="application/json"
+            )
+    
+    with col_limpar:
+        if st.button("🔄 Atualizar Dados"):
+            st.rerun()
