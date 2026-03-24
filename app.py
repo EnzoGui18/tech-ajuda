@@ -49,6 +49,38 @@ def get_base64_image(image_path):
     except FileNotFoundError:
         return ""
 
+def detectar_categoria(descricao):
+    """Detecta automaticamente a categoria baseado em palavras-chave."""
+    if not descricao:
+        return None
+    
+    descricao_lower = descricao.lower()
+    
+    # Keywords para cada categoria
+    bullying_keys = ["brinca", "apelido", "zoação", "excluem", "isolam", "chacota", "gozação", "implicam", "tiram sarro"]
+    racismo_keys = ["preto", "negro", "branco", "raça", "etnia", "cor", "origem", "descendente", "etnias"]
+    assdio_keys = ["toca", "beija", "abraça", "sem permissão", "constrangedor", "constrangida", "assédio", "impróprio"]
+    sofrimento_keys = ["triste", "depressão", "ansiedade", "medo", "isolamento", "sozinho", "chorando", "suicida", "morte"]
+    
+    # Verificar cada categoria
+    for key in bullying_keys:
+        if key in descricao_lower:
+            return "Bullying"
+    
+    for key in racismo_keys:
+        if key in descricao_lower:
+            return "Racismo"
+    
+    for key in assdio_keys:
+        if key in descricao_lower:
+            return "Assédio"
+    
+    for key in sofrimento_keys:
+        if key in descricao_lower:
+            return "Sofrimento Emocional"
+    
+    return None
+
 # 3. INJEÇÃO DE CSS DE ALTA ACESSIBILIDADE E DESIGN
 base64_bg = get_base64_image(ARQUIVO_BACKGROUND)
 
@@ -161,6 +193,10 @@ if 'tela' not in st.session_state:
     st.session_state.tela = 1
 if 'usuario' not in st.session_state:
     st.session_state.usuario = "Anônimo"
+if 'historico_denuncias' not in st.session_state:
+    st.session_state.historico_denuncias = 0
+if 'ultima_denuncia' not in st.session_state:
+    st.session_state.ultima_denuncia = None
 
 def mudar_tela(nova_tela):
     st.session_state.tela = nova_tela
@@ -194,6 +230,13 @@ elif st.session_state.tela == 2:
     st.write(f"Olá, **{st.session_state.usuario}**. Você está em um ambiente seguro.")
     st.write("---")
     
+    # Mostrar histórico do aluno
+    if st.session_state.historico_denuncias > 0:
+        st.info(f"📊 **Seu histórico:** Você já fez {st.session_state.historico_denuncias} pedido(s) de ajuda. Estamos sempre ouvindo!")
+        if st.session_state.ultima_denuncia:
+            st.write(f"_Último pedido: {st.session_state.ultima_denuncia}_")
+    
+    st.write("")
     st.write("### O que você precisa agora?")
     
     if st.button("🚨 PEDIR AJUDA AGORA", type="primary"):
@@ -232,9 +275,27 @@ elif st.session_state.tela == 4:
     local = st.text_input("3. Onde isso aconteceu? (Ex: Sala de Aula, Corredor, Refeitório...)")
     descricao = st.text_area("4. Quer contar mais detalhes? ")
     
+    # 🤖 DETECÇÃO AUTOMÁTICA DE CATEGORIA
+    categoria_detectada = detectar_categoria(descricao)
+    if categoria_detectada and tipo == "Toque aqui para escolher...":
+        st.success(f"✅ Detectamos **{categoria_detectada}** no seu relato. Atualizamos para você!")
+        tipo = categoria_detectada
+    
     st.write("---")
     
+    # 📚 SUGESTÕES DE RECURSOS
+    recursos_por_tipo = {
+        "Bullying": "📞 **Telefone da Doméstica:** 100 | 🌐 **Disque Denúncia:** 181 | 💬 **Chat com Psicólogo:** [clique aqui](https://www.psicologiaviva.com.br)",
+        "Racismo": "🎓 **Material Educativo:** [Combate ao Racismo](https://www.gov.br/cidadania) | 📞 **Ouvidoria de Igualdade:** 136",
+        "Assédio": "⚖️ **Delegacia Eletrônica:** [Aqui](https://www.delegaciaeletronica.pc.sp.gov.br) | 📞 **Disque Mulher:** 180",
+        "Sofrimento Emocional": "💙 **CVV (Prevenção ao Suicídio):** 188 | 🏥 **Buscar Psicólogo:** [CAMINHO](https://www.caminhodaluz.org.br) | 📱 **App Meu Acolher:** Download grátis",
+        "Outros": "📞 **Coordenação Escolar:** Procure um professor de confiança | 🤝 **Orientador:** Sempre disponível"
+    }
+    
     if tipo != "Toque aqui para escolher...":
+        with st.expander("💡 Recursos e Ajuda para " + tipo, expanded=False):
+            st.markdown(recursos_por_tipo.get(tipo, "Estamos aqui para ouvir você."))
+        
         numero_destino = "558694231846" 
         
         nome_aluno_envio = "Anônimo" if anonimato == "Quero ser Anônimo" else st.session_state.usuario
@@ -254,7 +315,13 @@ elif st.session_state.tela == 4:
                 local=local,
                 descricao=descricao
             )
+            
+            # Atualizar histórico
+            st.session_state.historico_denuncias += 1
+            st.session_state.ultima_denuncia = datetime.now().strftime("%d/%m às %H:%M")
+            
             st.success("✅ Seu pedido foi registrado com segurança!")
+            st.info(f"📊 Total de pedidos: {st.session_state.historico_denuncias}")
             st.info("📱 Clique no link abaixo para enviar pelo WhatsApp:")
             st.markdown(f"[📲 Enviar para Coordenação]({link_whatsapp})")
             st.balloons()
