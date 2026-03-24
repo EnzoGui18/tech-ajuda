@@ -2,6 +2,7 @@ import streamlit as st
 import urllib.parse
 import csv
 import os
+import base64
 from datetime import datetime
 
 # 1. CONFIGURAÇÃO BÁSICA DA PÁGINA
@@ -13,6 +14,7 @@ st.set_page_config(
 
 # 2. CONFIGURAÇÃO DE BANCO DE DADOS (CSV local)
 ARQUIVO_DENUNCIAS = "denuncias.csv"
+ARQUIVO_BACKGROUND = "background.avif"
 
 def salvar_denuncia(usuario, anonimato, tipo, local, descricao):
     """Salva a denúncia em CSV para análise posterior."""
@@ -38,22 +40,56 @@ def salvar_denuncia(usuario, anonimato, tipo, local, descricao):
         st.error(f"Erro ao salvar: {e}")
         return False
 
+def get_base64_image(image_path):
+    """Converte imagem para base64."""
+    try:
+        with open(image_path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode()
+            return f"data:image/avif;base64,{encoded}"
+    except FileNotFoundError:
+        return ""
+
 # 3. INJEÇÃO DE CSS DE ALTA ACESSIBILIDADE E DESIGN
-css_background = ".stApp {background-color: #F0F4F8;}"
+base64_bg = get_base64_image(ARQUIVO_BACKGROUND)
+
+if base64_bg:
+    css_background = f"""
+    .stApp {{
+        background-image: url("{base64_bg}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+    """
+else:
+    css_background = ".stApp {background-color: #F0F4F8;}"
 
 st.markdown(f"""
     <style>
     /* --- FUNDO E CAIXA DE CONTEÚDO --- */
     {css_background}
     
-    /* Uma única caixa branca que envolve toda a tela */
+    /* Overlay semi-transparente para melhor legibilidade */
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.25);
+        z-index: -1;
+    }}
+    
+    /* Uma única caixa branca que envolve toda a tela - ACESSÍVEL */
     .block-container {{
-        background-color: rgba(255, 255, 255, 0.92) !important; 
+        background-color: rgba(255, 255, 255, 0.98) !important; 
         padding: 2rem 3rem !important; 
         border-radius: 24px !important; 
-        box-shadow: 0px 10px 40px rgba(0,0,0,0.2) !important; 
+        box-shadow: 0px 10px 40px rgba(0,0,0,0.3) !important; 
         margin-top: 2rem !important;
         margin-bottom: 2rem !important;
+        border: 3px solid #0056B3 !important;
     }}
     
     /* --- ACESSIBILIDADE DE TEXTO --- */
